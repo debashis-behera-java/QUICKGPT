@@ -36,7 +36,7 @@ res.json({success: true,reply})
 chat.messages.push(reply)
 await chat.save()
 
-await User.updateOne({_id: userId}, {$inc: {credits:-1}})
+await User.updateOne({_id: userId}, {$inc: {credits: -1}})
 
   }catch(error){
      res.json({success: false, message:error.message})

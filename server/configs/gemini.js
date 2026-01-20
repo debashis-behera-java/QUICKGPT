@@ -1,8 +1,7 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const gemini = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+export const geminiModel = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
 });
-
-export default gemini;

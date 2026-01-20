@@ -2,7 +2,8 @@ import axios from "axios";
 import Chat from "../models/Chat.js";
 import User from "../models/User.js";
 import imagekit from "../configs/imageKit.js";
-import gemini from "../configs/gemini.js";
+import { geminiModel } from "../configs/gemini.js";
+
 
 
 /* =========================
@@ -35,12 +36,9 @@ export const textMessageController = async (req, res) => {
     });
 
     // 🔥 GEMINI CALL
-    const response = await gemini.chat.completions.create({
-      model: "gemini-1.5-flash",
-      messages: [{ role: "user", content: prompt }],
-    });
+    const result = await geminiModel.generateContent(prompt);
+    const replyText = result.response.text();
 
-    const replyText = response.choices[0].message.content;
 
     const reply = {
       role: "assistant",

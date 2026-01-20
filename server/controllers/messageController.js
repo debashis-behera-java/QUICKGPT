@@ -2,11 +2,12 @@ import axios from "axios";
 import Chat from "../models/Chat.js";
 import User from "../models/User.js";
 import imagekit from "../configs/imageKit.js";
-import grok from "../configs/grok.js";
+import gemini from "../configs/gemini.js";
 
-// =======================
-// TEXT MESSAGE CONTROLLER
-// =======================
+
+/* =========================
+   TEXT MESSAGE CONTROLLER
+========================= */
 export const textMessageController = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -20,11 +21,12 @@ export const textMessageController = async (req, res) => {
 
     const { chatId, prompt } = req.body;
 
-    const chat = await Chat.findOne({ userId, _id: chatId });
+    const chat = await Chat.findOne({ _id: chatId, userId });
     if (!chat) {
       return res.json({ success: false, message: "Chat not found" });
     }
 
+    // save user message
     chat.messages.push({
       role: "user",
       content: prompt,
@@ -32,14 +34,17 @@ export const textMessageController = async (req, res) => {
       isImage: false,
     });
 
-    const response = await grok.post("/chat/completions", {
-      model: "grok-beta",
+    // 🔥 GEMINI CALL
+    const response = await gemini.chat.completions.create({
+      model: "gemini-1.5-flash",
       messages: [{ role: "user", content: prompt }],
     });
 
+    const replyText = response.choices[0].message.content;
+
     const reply = {
       role: "assistant",
-      content: response.data.choices[0].message.content,
+      content: replyText,
       timestamp: Date.now(),
       isImage: false,
     };
@@ -47,17 +52,26 @@ export const textMessageController = async (req, res) => {
     chat.messages.push(reply);
     await chat.save();
 
-    await User.updateOne({ _id: userId }, { $inc: { credits: -1 } });
+    await User.updateOne(
+      { _id: userId },
+      { $inc: { credits: -1 } }
+    );
 
     res.json({ success: true, reply });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error("Gemini error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Gemini request failed",
+    });
   }
 };
 
-// =======================
-// IMAGE MESSAGE CONTROLLER
-// =======================
+
+/* =========================
+   IMAGE MESSAGE CONTROLLER
+========================= */
 export const imageMessageController = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -71,11 +85,15 @@ export const imageMessageController = async (req, res) => {
 
     const { prompt, chatId, isPublished } = req.body;
 
-    const chat = await Chat.findOne({ userId, _id: chatId });
+    const chat = await Chat.findOne({ _id: chatId, userId });
     if (!chat) {
-      return res.json({ success: false, message: "Chat not found" });
+      return res.json({
+        success: false,
+        message: "Chat not found",
+      });
     }
 
+    // Save user message
     chat.messages.push({
       role: "user",
       content: prompt,
@@ -83,18 +101,23 @@ export const imageMessageController = async (req, res) => {
       isImage: false,
     });
 
+    // Encode prompt
     const encodedPrompt = encodeURIComponent(prompt);
+
+    // Generate ImageKit URL
     const imageUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/ik-genimg-prompt-${encodedPrompt}/quickgpt/${Date.now()}.png?tr=w-800,h-800`;
 
-    const imgResponse = await axios.get(imageUrl, {
+    const imageResponse = await axios.get(imageUrl, {
       responseType: "arraybuffer",
     });
 
     const base64Image = `data:image/png;base64,${Buffer.from(
-      imgResponse.data
+      imageResponse.data,
+      "binary"
     ).toString("base64")}`;
 
-    const upload = await imagekit.upload({
+    // Upload to ImageKit
+    const uploadResponse = await imagekit.upload({
       file: base64Image,
       fileName: `${Date.now()}.png`,
       folder: "quickgpt",
@@ -102,7 +125,7 @@ export const imageMessageController = async (req, res) => {
 
     const reply = {
       role: "assistant",
-      content: upload.url,
+      content: uploadResponse.url,
       timestamp: Date.now(),
       isImage: true,
       isPublished,
@@ -111,10 +134,18 @@ export const imageMessageController = async (req, res) => {
     chat.messages.push(reply);
     await chat.save();
 
-    await User.updateOne({ _id: userId }, { $inc: { credits: -2 } });
+    await User.updateOne(
+      { _id: userId },
+      { $inc: { credits: -2 } }
+    );
 
     res.json({ success: true, reply });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error("Image error:", error.message);
+
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
 };

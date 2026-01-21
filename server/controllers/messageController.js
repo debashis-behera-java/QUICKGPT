@@ -57,13 +57,14 @@ export const textMessageController = async (req, res) => {
 
     res.json({ success: true, reply });
   } catch (error) {
-    console.error("Gemini error:", error.message);
+  console.error("FULL GEMINI ERROR:", error);
 
-    res.status(500).json({
-      success: false,
-      message: "Gemini request failed",
-    });
-  }
+  res.status(500).json({
+    success: false,
+    message: error.message,
+  });
+}
+
 };
 
 

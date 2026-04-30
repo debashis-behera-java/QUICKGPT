@@ -40,7 +40,7 @@ const onSubmit = async (e) => {
     ]);
 
     const { data } = await axios.post(
-      `/api/message/${mode}`,
+  `https://quickgpt-32vz.onrender.com/api/message/${mode}`,
       {
         chatId: selectedChat._id,
         prompt: promptCopy,

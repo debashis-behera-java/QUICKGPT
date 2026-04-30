@@ -2,7 +2,7 @@ import axios from "axios";
 import Chat from "../models/Chat.js";
 import User from "../models/User.js";
 import imagekit from "../configs/imageKit.js";
-import { geminiModel } from "../configs/gemini.js";
+ import { generateText } from "../configs/gemini.js";
 
 
 
@@ -36,8 +36,22 @@ export const textMessageController = async (req, res) => {
     });
 
     // 🔥 GEMINI CALL
-    const result = await geminiModel.generateContent(prompt);
-    const replyText = result.response.text();
+  
+
+// 🔥 Build full conversation (ChatGPT style)
+const messages = [
+  {
+    role: "system",
+    content: "You are a helpful AI assistant."
+  },
+  ...chat.messages.slice(-10).map(m => ({
+    role: m.role,
+    content: m.content
+  }))
+];
+
+// 🔥 Call AI with full chat history
+const replyText = await generateText(messages);
 
 
     const reply = {

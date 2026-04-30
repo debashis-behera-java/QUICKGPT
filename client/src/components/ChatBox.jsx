@@ -24,6 +24,11 @@ const onSubmit = async (e) => {
   try {
     if (!user) return toast("Login to send message");
 
+     if (!selectedChat) {
+      toast.error("Chat is not ready yet. Please wait...");
+      return;
+    }
+
     setLoading(true);
 
     const promptCopy = prompt;

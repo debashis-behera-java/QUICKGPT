@@ -34,8 +34,8 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
       e.stopPropagation()
       const confirm = window.confirm('Are you sure you want to delete this chat?')
       if(!confirm)return
-      const {data} =await axios.post(
-  "/api/chat/delete",
+      const {data} =awaitaxios.post(
+  `${import.meta.env.VITE_SERVER_URL}/api/chat/delete`,
   { chatId },
   { headers: { Authorization: `Bearer ${token}` } }
 );

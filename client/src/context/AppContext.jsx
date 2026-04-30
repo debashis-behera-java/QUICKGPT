@@ -45,21 +45,28 @@ export const AppContextProvider = ({ children }) => {
   };
 
   // ✅ Create new chat
-  const createNewChat = async () => {
-    try {
-      if (!user) return toast("Login to create a new chat");
+ const createNewChat = async () => {
+  try {
+    if (!user) return toast("Login to create a new chat");
 
-      navigate("/");
+    navigate("/");
 
-      await axios.get("/api/chat/create", {
+    const { data } = await axios.post(
+      "/api/chat/create",
+      {},
+      {
         headers: authHeader,
-      });
+      }
+    );
 
-      await fetchUserChats();
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+    if (data.success) {
+      await fetchUserChats(); // ✅ ONLY ONCE
     }
-  };
+
+  } catch (error) {
+    toast.error(error.response?.data?.message || error.message);
+  }
+};
 
   // ✅ Fetch user chats
   const fetchUserChats = async () => {
@@ -73,6 +80,7 @@ export const AppContextProvider = ({ children }) => {
 
         if (data.chats.length === 0) {
           await createNewChat();
+          return;
         } else {
           setSelectedChat(data.chats[0]);
         }
